@@ -7,17 +7,16 @@ Citizen.CreateThread(function()
 		TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 		Citizen.Wait(0)
 	end
-end)
 
-Citizen.CreateThread(function()
-	if NetworkIsSessionStarted() then
-		Citizen.Wait(15000)
-		ESX.TriggerServerCallback('esx_shops:requestDBItems', function(ShopItems)
-			for k,v in pairs(ShopItems) do
+	Citizen.Wait(5000)
+
+	ESX.TriggerServerCallback('esx_shops:requestDBItems', function(ShopItems)
+		for k,v in pairs(ShopItems) do
+			if (Config.Zones[k] ~= nil) then
 				Config.Zones[k].Items = v
 			end
-		end)
-	end
+		end
+	end)
 end)
 
 function OpenShopMenu(zone)

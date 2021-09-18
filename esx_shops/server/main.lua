@@ -3,26 +3,47 @@ local ShopItems = {}
 
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-MySQL.ready(function()
-	MySQL.Async.fetchAll('SELECT * FROM shops LEFT JOIN items ON items.name = shops.item', {}, function(shopResult)
-		for i=1, #shopResult, 1 do
-			if shopResult[i].name then
-				if ShopItems[shopResult[i].store] == nil then
-					ShopItems[shopResult[i].store] = {}
-				end
-
-				table.insert(ShopItems[shopResult[i].store], {
-					label = shopResult[i].label,
-					item  = shopResult[i].item,
-					price = shopResult[i].price,
-					imglink = shopResult[i].imglink
-				})
-			else
-				print(('esx_shops: invalid item "%s" found!'):format(shopResult[i].item))
-			end
-		end
-	end)
+AddEventHandler('onMySQLReady', function()
+	hasSqlRun = true
+	LoadShop()
 end)
+
+Citizen.CreateThread(function()
+	Citizen.Wait(2000)
+
+	if not hasSqlRun then
+		LoadShop()
+		hasSqlRun = true
+	end
+end)
+
+function LoadShop()
+	local itemResult = MySQL.Sync.fetchAll('SELECT * FROM items')
+	local shopResult = MySQL.Sync.fetchAll('SELECT * FROM shops')
+
+	local itemInformation = {}
+	for i=1, #itemResult, 1 do
+
+		if itemInformation[itemResult[i].name] == nil then
+			itemInformation[itemResult[i].name] = {}
+		end
+
+		itemInformation[itemResult[i].name].label = itemResult[i].label
+	end
+
+	for i=1, #shopResult, 1 do
+		if ShopItems[shopResult[i].store] == nil then
+			ShopItems[shopResult[i].store] = {}
+		end
+
+		table.insert(ShopItems[shopResult[i].store], {
+			label = itemInformation[shopResult[i].item].label,
+			item  = shopResult[i].item,
+			price = shopResult[i].price,
+			imglink = shopResult[i].imglink
+		})
+	end
+end
 
 ESX.RegisterServerCallback('esx_shops:requestDBItems', function(source, cb)
 	cb(ShopItems)
